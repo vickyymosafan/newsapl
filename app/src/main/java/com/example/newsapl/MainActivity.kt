@@ -5,13 +5,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.newsapl.data.model.Article
+import com.example.newsapl.ui.screens.ArticleDetailScreen
+import com.example.newsapl.ui.screens.NewsScreen
 import com.example.newsapl.ui.theme.NewsaplTheme
+import com.example.newsapl.ui.viewmodel.NewsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,11 +26,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NewsaplTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    NewsApp()
                 }
             }
         }
@@ -31,17 +38,23 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    NewsaplTheme {
-        Greeting("Android")
+fun NewsApp() {
+    val viewModel: NewsViewModel = viewModel()
+    var selectedArticle by remember { mutableStateOf<Article?>(null) }
+    
+    if (selectedArticle == null) {
+        NewsScreen(
+            viewModel = viewModel,
+            onArticleClick = { article ->
+                selectedArticle = article
+            }
+        )
+    } else {
+        ArticleDetailScreen(
+            article = selectedArticle!!,
+            onBackPressed = {
+                selectedArticle = null
+            }
+        )
     }
 }
