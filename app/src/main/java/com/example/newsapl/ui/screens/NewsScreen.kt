@@ -17,7 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,6 +26,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -35,26 +37,29 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.newsapl.data.model.Article
 import com.example.newsapl.ui.components.HeadlineCard
 import com.example.newsapl.ui.components.NewsCard
 import com.example.newsapl.ui.viewmodel.NewsViewModel
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewsScreen(
-    viewModel: NewsViewModel,
+    viewModel: NewsViewModel = viewModel(),
     onArticleClick: (Article) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = uiState.isHeadlinesLoading || uiState.isAllNewsLoading)
+    val pullRefreshState = rememberPullToRefreshState(
+        refreshing = uiState.isHeadlinesLoading || uiState.isAllNewsLoading,
+        onRefresh = { viewModel.refreshAllData() }
+    )
     val coroutineScope = rememberCoroutineScope()
     
     Scaffold(
@@ -82,16 +87,11 @@ fun NewsScreen(
             )
         }
     ) { paddingValues ->
-        SwipeRefresh(
-            state = swipeRefreshState,
-            onRefresh = {
-                coroutineScope.launch {
-                    viewModel.refreshAllData()
-                }
-            },
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .nestedScroll(pullRefreshState.nestedScrollConnection)
         ) {
             NewsContent(
                 headlines = uiState.headlines,
@@ -103,6 +103,11 @@ fun NewsScreen(
                 canLoadMore = uiState.canLoadMore,
                 onLoadMore = { viewModel.loadAllNews() },
                 onArticleClick = onArticleClick
+            )
+            
+            PullToRefreshContainer(
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
             )
         }
     }
@@ -173,7 +178,7 @@ fun NewsContent(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .fillMaxWidth()
@@ -203,14 +208,18 @@ fun NewsContent(
         
         if (allNewsError != null && allNews.isEmpty()) {
             item {
-                Text(
-                    text = "Error: $allNewsError",
-                    color = Color.Red,
-                    textAlign = TextAlign.Center,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                )
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = allNewsError,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }
@@ -241,8 +250,8 @@ fun HeadlinesSection(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Error: $error",
-                color = Color.Red,
+                text = error,
+                color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center
             )
         }

@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.plugin.compose") version "1.9.20"
 }
 
 android {
@@ -63,6 +63,9 @@ dependencies {
     
     // Material Icons Extended
     implementation("androidx.compose.material:material-icons-extended:1.6.3")
+    
+    // Compose Material
+    implementation("androidx.compose.material:material:1.6.3")
     
     // Accompanist SwipeRefresh
     implementation("com.google.accompanist:accompanist-swiperefresh:0.30.1")
