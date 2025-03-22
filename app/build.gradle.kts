@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("org.jetbrains.kotlin.plugin.compose") version "1.9.20"
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
