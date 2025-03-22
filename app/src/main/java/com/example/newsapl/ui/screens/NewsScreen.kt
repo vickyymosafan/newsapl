@@ -26,13 +26,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,6 +43,9 @@ import com.example.newsapl.data.model.Article
 import com.example.newsapl.ui.components.HeadlineCard
 import com.example.newsapl.ui.components.NewsCard
 import com.example.newsapl.ui.viewmodel.NewsViewModel
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,14 +54,8 @@ fun NewsScreen(
     onArticleClick: (Article) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val pullToRefreshState = rememberPullToRefreshState()
-    
-    if (pullToRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
-            viewModel.refreshAllData()
-            pullToRefreshState.endRefresh()
-        }
-    }
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = uiState.isHeadlinesLoading || uiState.isAllNewsLoading)
+    val coroutineScope = rememberCoroutineScope()
     
     Scaffold(
         topBar = {
@@ -86,10 +82,16 @@ fun NewsScreen(
             )
         }
     ) { paddingValues ->
-        PullToRefreshBox(
-            state = pullToRefreshState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = paddingValues
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = {
+                coroutineScope.launch {
+                    viewModel.refreshAllData()
+                }
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
             NewsContent(
                 headlines = uiState.headlines,
